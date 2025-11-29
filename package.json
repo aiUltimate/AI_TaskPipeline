@@ -1,0 +1,13 @@
+{
+  "name": "ai-task-pipeline",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "demo": "python -m http.server 8000",
+    "test": "npm run test:audit && npm run test:delegation && npm run test:integration",
+    "test:audit": "node tests/auditWorkers.mjs",
+    "test:delegation": "node tests/delegationRunner.mjs",
+    "test:integration": "node tests/auditIntegration.mjs"
+  }
+}

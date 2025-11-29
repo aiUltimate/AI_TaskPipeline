@@ -1,0 +1,13 @@
+{
+  "name": "battlefield-canary",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "Periodic canary that snapshots battlefield.com and diffs changes",
+  "scripts": {
+    "run": "node runBattlefieldCanary.js"
+  },
+  "dependencies": {
+    "playwright": "^1.48.0"
+  }
+}
