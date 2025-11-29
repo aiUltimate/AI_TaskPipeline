@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Modular Pipeline Demo – Weather + Web Analyzer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #050816;
+      --bg-alt: #0b1120;
+      --panel: #020617;
+      --panel-alt: #020617;
+      --border-subtle: rgba(148, 163, 184, 0.25);
+      --accent: #4ade80;
+      --accent-soft: rgba(74, 222, 128, 0.1);
+      --accent-strong: #22c55e;
+      --accent-warn: #f97316;
+      --accent-error: #ef4444;
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --code-bg: #020617;
+      --radius-lg: 18px;
+      --radius-xl: 22px;
+      --shadow-soft: 0 22px 45px rgba(15, 23, 42, 0.7);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #0f172a, #020617 55%);
+      color: var(--text-main);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 32px 16px 56px;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0 0 8px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+    }
+
+    h1 {
+      font-size: clamp(1.9rem, 2.4vw, 2.4rem);
+    }
+
+    h2 {
+      font-size: 1.35rem;
+      margin-bottom: 6px;
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      margin-top: 8px;
+    }
+
+    p {
+      margin: 4px 0 10px;
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    code {
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo,
+        Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.85rem;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 0.1rem 0.3rem;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: radial-gradient(circle at top left, #1e293b, #020617 55%);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.95);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .pill-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.2);
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2.3fr);
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 840px) {
+      header {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .hero-card {
+      padding: 18px 18px 16px;
+      border-radius: var(--radius-xl);
+      background: radial-gradient(circle at top left, #0b1120, #020617 60%);
+      border: 1px solid rgba(148, 163, 184, 0.38);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .hero-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .hero-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .hero-meta span {
+      opacity: 0.9;
+    }
+
+    .hero-sub {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .hero-note {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      opacity: 0.9;
+    }
+
+    .pipe-overview {
+      padding: 16px;
+      border-radius: var(--radius-xl);
+      background: radial-gradient(circle at top right, #020617, #020617 60%);
+      border: 1px solid rgba(75, 85, 99, 0.9);
+    }
+
+    .pipe-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 6px;
+      font-size: 0.82rem;
+    }
+
+    .pipe-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      color: var(--text-muted);
+    }
+
+    .pipe-step-badge {
+      flex: 0 0 auto;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      color: var(--accent);
+      background: rgba(15, 23, 42, 0.95);
+    }
+
+    /* Layout for the two pipelines */
+    .pipeline-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 18px;
+    }
+
+    .pipeline-card {
+      padding: 16px 16px 14px;
+      border-radius: var(--radius-xl);
+      background: radial-gradient(circle at top, #020617, #020617 60%);
+      border: 1px solid rgba(75, 85, 99, 0.9);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.65);
+    }
+
+    .pipeline-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .pipeline-title {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .pipeline-title small {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+    }
+
+    .pipeline-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .controls-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      display: block;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 6px 8px;
+      margin-top: 3px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--text-main);
+      font-size: 0.86rem;
+      outline: none;
+    }
+
+    textarea {
+      border-radius: 12px;
+      min-height: 70px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.6);
+    }
+
+    button {
+      padding: 7px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 197, 94, 0.5);
+      background: radial-gradient(circle at top left, #22c55e, #15803d 60%);
+      color: #020617;
+      font-size: 0.86rem;
+      font-weight: 550;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    button span.dots {
+      display: inline-flex;
+      gap: 2px;
+    }
+
+    button span.dots i {
+      width: 3px;
+      height: 3px;
+      border-radius: 999px;
+      background: rgba(22, 101, 52, 0.95);
+    }
+
+    button:hover {
+      filter: brightness(1.03);
+      transform: translateY(-0.5px);
+    }
+
+    button:active {
+      transform: translateY(0.5px);
+      filter: brightness(0.98);
+    }
+
+    button.secondary {
+      border-color: rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--text-main);
+    }
+
+    .status {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+      min-height: 1.1em;
+    }
+
+    .status.ok {
+      color: var(--accent-strong);
+    }
+
+    .status.error {
+      color: var(--accent-error);
+    }
+
+    .node-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 10px;
+    }
+
+    @media (min-width: 960px) {
+      .node-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    .node-card {
+      padding: 10px 10px 8px;
+      border-radius: var(--radius-lg);
+      background: var(--panel);
+      border: 1px solid var(--border-subtle);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .node-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .node-title {
+      font-size: 0.88rem;
+      font-weight: 540;
+    }
+
+    .node-type {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .node-path {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo,
+        Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      opacity: 0.9;
+    }
+
+    .node-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .json-view {
+      margin: 4px 0 0;
+      padding: 8px;
+      border-radius: 10px;
+      background: var(--code-bg);
+      border: 1px solid rgba(30, 64, 175, 0.9);
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo,
+        Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.78rem;
+      color: #e5e7eb;
+      max-height: 220px;
+      overflow: auto;
+      white-space: pre;
+    }
+
+    .json-view.empty {
+      color: rgba(148, 163, 184, 0.6);
+    }
+
+    .summary-block {
+      margin-top: 4px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(22, 163, 74, 0.08);
+      border: 1px solid rgba(34, 197, 94, 0.4);
+      font-size: 0.85rem;
+      color: var(--text-main);
+    }
+
+    .summary-block strong {
+      color: var(--accent-strong);
+    }
+
+    .badge-inline {
+      padding: 1px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .two-col-inline {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, auto));
+      gap: 6px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .two-col-inline span {
+      white-space: nowrap;
+    }
+
+    .link-list {
+      margin-top: 4px;
+      font-size: 0.82rem;
+    }
+
+    .link-list ol {
+      padding-left: 18px;
+      margin: 2px 0 0;
+    }
+
+    .link-list a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .link-list a:hover {
+      text-decoration: underline;
+    }
+
+    footer {
+      margin-top: 26px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-align: left;
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="hero-card">
+        <div class="hero-title-row">
+          <div>
+            <h1>AI Modular Pipeline – Browser Demo</h1>
+            <p class="hero-sub">
+              Two fully transparent pipelines in one HTML file: a weather
+              pipeline and a web-page analyzer pipeline, both exposing every
+              intermediate JSON stage.
+            </p>
+          </div>
+          <div class="hero-tags">
+            <span class="pill">
+              <span class="pill-dot"></span>
+              Live node graph
+            </span>
+            <span class="tag">JSON-in → JSON-out</span>
+            <span class="tag">Provider-agnostic</span>
+          </div>
+        </div>
+        <p class="hero-note">
+          Each box below is a <strong>node</strong>. Nodes are pure functions
+          that take one JSON object and return a new one. The browser UI shows
+          you exactly what flows through each step so you can debug, swap
+          nodes, and grow from toy examples to complex products.
+        </p>
+        <div class="hero-meta">
+          <span>Weather pipeline: fully local (mocked)</span>
+          <span>Web analyzer: real HTML fetch + optional free LLM (Hugging Face)</span>
+        </div>
+      </div>
+      <div class="pipe-overview">
+        <h2>Pipeline Overview</h2>
+        <p>
+          Both pipelines follow the same pattern: normalize messy input →
+          build a provider-agnostic spec → adapt → execute → normalize output →
+          render.
+        </p>
+        <div class="pipe-steps">
+          <div class="pipe-step">
+            <span class="pipe-step-badge">1</span>
+            <span><strong>Input</strong> – free-form text from you.</span>
+          </div>
+          <div class="pipe-step">
+            <span class="pipe-step-badge">2</span>
+            <span><strong>Cleaning / Spec</strong> – we normalize into a typed JSON spec.</span>
+          </div>
+          <div class="pipe-step">
+            <span class="pipe-step-badge">3</span>
+            <span><strong>Adapter</strong> – we shape the spec for a concrete API or tool.</span>
+          </div>
+          <div class="pipe-step">
+            <span class="pipe-step-badge">4</span>
+            <span><strong>Execution</strong> – call the provider (mock, API, or LLM).</span>
+          </div>
+          <div class="pipe-step">
+            <span class="pipe-step-badge">5</span>
+            <span><strong>Formatter</strong> – normalize provider output back into a clean JSON shape.</span>
+          </div>
+          <div class="pipe-step">
+            <span class="pipe-step-badge">6</span>
+            <span><strong>UI Renderer</strong> – show the human-readable results plus the raw JSON.</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="pipeline-grid">
+      <!-- WEATHER PIPELINE -->
+      <article class="pipeline-card" id="weather-pipeline">
+        <div class="pipeline-header">
+          <div class="pipeline-title">
+            <h2>Weather Pipeline (Mocked)</h2>
+            <small>
+              Example of a numeric pipeline: we turn a city name into a simple
+              forecast with derived stats and comparison to last run.
+            </small>
+          </div>
+          <div class="pipeline-meta">
+            <span class="badge-inline">Nodes: 6</span>
+            <span class="badge-inline">External calls: 0 (mock)</span>
+          </div>
+        </div>
+
+        <div class="controls-row">
+          <div style="flex: 2 1 200px;">
+            <label>
+              Location text
+              <input
+                id="weather-location-input"
+                type="text"
+                placeholder="e.g. Berlin, Tokyo, San Francisco"
+              />
+            </label>
+          </div>
+          <div style="flex: 1 1 140px;">
+            <label>
+              Units
+              <select id="weather-units">
+                <option value="metric">Metric (°C)</option>
+                <option value="imperial">Imperial (°F)</option>
+              </select>
+            </label>
+          </div>
+          <div style="flex: 0 0 auto; align-self: flex-end;">
+            <button id="run-weather">
+              Run weather pipeline
+              <span class="dots"><i></i><i></i><i></i></span>
+            </button>
+          </div>
+        </div>
+
+        <div id="weather-status" class="status"></div>
+
+        <div class="node-grid">
+          <section class="node-card">
+            <div class="node-header">
+              <div>
+                <div class="node-title">Node 1 – Location Spec</div>
+                <div class="node-type">User text → <code>LocationSpec</code></div>
+              </div>
+              <div class="node-path">/nodes/location-spec</div>
+            </div>
+            <p class="node-desc">
+              Parses your free-form location text into a structured object with
+              city, country guess, and units. This is the “normalized” view of
+              your input.
+            </p>
+            <pre id="weather-location-json" class="json-view empty">{}</pre>
+          </section>
+
+          <section class="node-card">
+            <div class="node-header">
+              <div>
+                <div class="node-title">Node 2 – Weather Request</div>
+                <div class="node-type">LocationSpec → <code>WeatherRequest</code></div>
+              </div>
+              <div class="node-path">/nodes/weather-request</div>
+            </div>
+            <p class="node-desc">
+              Converts the location spec into a provider-agnostic “request”
+              structure. In a real system this would map to Open-Meteo or any
+              other weather provider.
+            </p>
+            <pre id="weather-request-json" class="json-view empty">{}</pre>
+          </section>
+
+          <section class="node-card">
+            <div class="node-header">
+              <div>
+                <div class="node-title">Node 3 – Forecast (Mock)</div>
+                <div class="node-type">WeatherRequest → <code>RawForecast</code></div>
+              </div>
+              <div class="node-path">/nodes/forecast</div>
+            </div>
+            <p class="node-desc">
+              In a real deployment this would hit a weather API. Here we
+              generate a deterministic mock forecast so the pipeline is
+              self-contained.
+            </p>
+            <pre id="weather-forecast-json" class="json-view empty">{}</pre>
+          </section>
+
+          <section class="node-card">
+            <div class="node-header">
+              <div>
+                <div class="node-title">Node 4 – Tomorrow Stats</div>
+                <div class="node-type">RawForecast → <code>TomorrowStats</code></div>
+              </div>
+              <div class="node-path">/nodes/tomorrow-stats</div>
+            </div>
+            <p class="node-desc">
+              Extracts tomorrow’s high, low, and “feels like” values from the
+              forecast JSON and calculates a simple comfort score.
+            </p>
+            <pre id="weather-stats-json" class="json-view empty">{}</pre>
+          </section>
+
+          <section class="node-card">
+            <div class="node-header">
+              <div>
+                <div class="node-title">Node 5 – Comparison</div>
+                <div class="node-type">TomorrowStats → <code>Comparison</code></div>
+              </div>
+              <div class="node-path">/nodes/comparison</div>
+            </div>
+            <p class="node-desc">
+              Compares the current run to the previous run for the same
+              location, so you can see how the pipeline output changes over
+              time.
+            </p>
+            <pre id="weather-comparison-json" class="json-view empty">{}</pre>
+          </section>
+
+          <section class="node-card">
+            <div class="node-header">
+              <div>
+                <div class="node-title">Node 6 – Renderer</div>
+                <div class="node-type">Comparison → UI</div>
+              </div>
+              <div class="node-path">/nodes/weather-renderer</div>
+            </div>
+            <p class="node-desc">
+              Turns the normalized numbers into a human-friendly summary and a
+              couple of visual bars. The JSON below is exactly what the UI is
+              using.
+            </p>
+            <div id="weather-summary" class="summary-block">
+              Run the pipeline to see a summary here.
+            </div>
+            <pre id="weather-render-json" class="json-view empty">{}</pre>
+          </section>
+        </div>
+      </article>
+
+      <!-- WEB ANALYZER PIPELINE -->
+      <article class="pipeline-card" id="web-pipeline">
+        <div class="pipeline-header">
+          <div class="pipeline-title">
+            <h2>Web Analyzer Pipeline</h2>
+            <small>
+              Turns a natural language request with a URL into a list of top
+              links and a natural language summary (mock or Hugging Face).
+            </small>
+          </div>
+          <div class="pipeline-meta">
+            <span class="badge-inline">Nodes: 6</span>
+            <span class="badge-inline">Uses: DOMParser + optional free LLM</span>
+          </div>
+        </div>
+
+        <div class="controls-row">
+          <div style="flex: 2 1 220px;">
+            <label>
+              Request with URL
+              <textarea
+                id="web-input-text"
+                placeholder="e.g. Go look at https://news.ycombinator.com and show me the top 5 stories."
+              ></textarea>
+            </label>
+          </div>
+          <div style="flex: 2 1 220px;">
+            <label>
+              Optional Hugging Face API token
+              <input
+                id="hf-token"
+                type="password"
+                placeholder="If empty, a mock summarizer is used."
+              />
+            </label>
+            <p style="margin-top:4px;font-size:0.76rem;color:var(--text-muted);">
+              Model: <code>facebook/bart-large-cnn</code>. The request is built
+              as a normal JSON payload; you can inspect it below.
+            </p>
+          </div>
+          <div style="flex: 0 0 auto; align-self: flex-end;">
+            <button id="run-web">
+              Run web pipeline
+              <span class="dots"><i></i><i></i><i></i></span>
+            </button>
+          </div>
+        </div>
+
+        <div id="web-status" class="status"></div>
+
+        <div class="node-grid">
+          <section class="node-card">
+            <div class="node-header">
+              <div>
+                <div class="node-title">Node 1 – Raw Text Input</div>
+                <div class="node-type">User text → <code>RawTextInput</code></div>
+              </div>
+              <div class="node-path">/nodes/web-input</div>
+            </div>
+            <p class="node-desc">
+              Captures the exact text you typed. No interpretation, no magic.
+              This is the “raw” entry point to the pipeline.
+            </p>
+            <pre id="web-input-json" class="json-view empty">{}</pre>
+          </section>
+
+          <section class="node-card">
+            <div class="node-header">
+              <div>
+                <div class="node-title">Node 2 – Prompt Cleaner / URL Extractor</div>
+                <div class="node-type">RawTextInput → <code>PromptDraft</code></div>
+              </div>
+              <div class="node-path">/nodes/web-prompt-draft</div>
+            </div>
+            <p class="node-desc">
+              Normalizes whitespace and extracts the first URL it finds with a
+              simple regex. That URL is what the rest of the pipeline uses.
+            </p>
+            <pre id="web-prompt-json" class="json-view empty">{}</pre>
+          </section>
+
+          <section class="node-card">
+            <div class="node-header">
+              <div>
+                <div class="node-title">Node 3 – Web Fetch</div>
+                <div class="node-type">PromptDraft → <code>FetchedPage</code></div>
+              </div>
+              <div class="node-path">/nodes/web-fetch</div>
+            </div>
+            <p class="node-desc">
+              Fetches the HTML for the detected URL. If CORS blocks the request,
+              it falls back to a public proxy (<code>api.allorigins.win</code>).
+            </p>
+            <pre id="web-fetch-json" class="json-view empty">{}</pre>
+          </section>
+
+          <section class="node-card">
+            <div class="node-header">
+              <div>
+                <div class="node-title">Node 4 – HTML → Links Extractor</div>
+                <div class="node-type">FetchedPage → <code>ExtractedLinks</code></div>
+              </div>
+              <div class="node-path">/nodes/web-links</div>
+            </div>
+            <p class="node-desc">
+              Uses the browser’s <code>DOMParser</code> to turn raw HTML into a
+              document, then walks <code>&lt;a&gt;</code> tags to collect
+              clickable links and normalize them to absolute URLs.
+            </p>
+            <pre id="web-links-json" class="json-view empty">{}</pre>
+          </section>
+
+          <section class="node-card">
+            <div class="node-header">
+              <div>
+                <div class="node-title">Node 5 – Top Links Selector</div>
+                <div class="node-type">ExtractedLinks → <code>TopLinks</code></div>
+              </div>
+              <div class="node-path">/nodes/web-top-links</div>
+            </div>
+            <p class="node-desc">
+              Ranks links with a simple heuristic (longer titles first) and
+              takes the top N. In a more advanced system this would be a proper
+              ranking node.
+            </p>
+            <div id="web-top-list" class="link-list">
+              <!-- Filled after pipeline run -->
+            </div>
+            <pre id="web-top-json" class="json-view empty">{}</pre>
+          </section>
+
+          <section class="node-card">
+            <div class="node-header">
+              <div>
+                <div class="node-title">Node 6 – Summarizer (AI / Mock)</div>
+                <div class="node-type">TopLinks → <code>SummaryOutput</code></div>
+              </div>
+              <div class="node-path">/nodes/web-summary</div>
+            </div>
+            <p class="node-desc">
+              Builds a plain-text prompt listing the links and either:
+              <strong>(a)</strong> calls Hugging Face with your token or
+              <strong>(b)</strong> uses a local mock summarizer.
+            </p>
+            <div id="web-summary" class="summary-block">
+              Run the pipeline to see a summary here. If you don’t provide a
+              Hugging Face token, you’ll see a mock summary built locally.
+            </div>
+            <pre id="web-summary-json" class="json-view empty">{}</pre>
+          </section>
+        </div>
+      </article>
+    </section>
+
+    <footer>
+      This file is intentionally “flat”: HTML + CSS + JS only. In a larger
+      project, each node would live in its own module and pipelines would be
+      declared via configuration, but the core idea remains the same:
+      observable, swappable, JSON-typed stages from input to output.
+    </footer>
+  </main>
+
+  <script>
+    // ------------- Shared helper: JSON view updater -------------
+    function updateJsonView(id, data) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      try {
+        el.textContent = JSON.stringify(data, null, 2);
+        el.classList.remove("empty");
+      } catch (e) {
+        el.textContent = "{}";
+        el.classList.add("empty");
+      }
+    }
+
+    // ------------- WEATHER PIPELINE (Mocked) -------------
+
+    // Node 1: LocationSpec
+    function buildLocationSpec() {
+      const inputEl = document.getElementById("weather-location-input");
+      const unitsEl = document.getElementById("weather-units");
+      const rawText = (inputEl?.value || "").trim();
+      const units = unitsEl?.value === "imperial" ? "imperial" : "metric";
+
+      // Very naive parsing: split on comma, take first as city, second as country guess
+      const parts = rawText.split(",").map((p) => p.trim()).filter(Boolean);
+      const city = parts[0] || "Unknown";
+      const countryGuess = parts[1] || null;
+
+      const payload = {
+        type: "LocationSpec",
+        input_text: rawText,
+        city,
+        country_guess: countryGuess,
+        units,
+        meta: {
+          created_at: Date.now()
+        }
+      };
+
+      updateJsonView("weather-location-json", payload);
+      return payload;
+    }
+
+    // Node 2: WeatherRequest
+    function buildWeatherRequest(locationSpec) {
+      const payload = {
+        type: "WeatherRequest",
+        provider_hint: "mock_weather_v1",
+        location: {
+          city: locationSpec.city,
+          country_guess: locationSpec.country_guess
+        },
+        units: locationSpec.units,
+        parameters: {
+          horizon_days: 3
+        }
+      };
+
+      updateJsonView("weather-request-json", payload);
+      return payload;
+    }
+
+    // Node 3: RawForecast (mocked, deterministic)
+    function buildMockForecast(weatherRequest) {
+      const base = Math.abs(hashString(weatherRequest.location.city)) % 15; // base variation
+      const todayBase = 18 + base;
+      const tomorrowBase = todayBase + ((hashString(weatherRequest.units) % 5) - 2);
+
+      const temps = [];
+      for (let i = 0; i < 24; i++) {
+        const variation = Math.sin((i / 24) * Math.PI) * 5;
+        temps.push(tomorrowBase + variation);
+      }
+
+      const payload = {
+        type: "RawForecast",
+        provider: "mock_weather_v1",
+        location: weatherRequest.location,
+        units: weatherRequest.units,
+        hourly: temps.map((t, idx) => ({
+          hour: idx,
+          temp: roundToOne(t)
+        })),
+        meta: {
+          generated_at: Date.now()
+        }
+      };
+
+      updateJsonView("weather-forecast-json", payload);
+      return payload;
+    }
+
+    // Node 4: TomorrowStats
+    function extractTomorrowStats(rawForecast) {
+      const temps = rawForecast.hourly.map((h) => h.temp);
+      const minTemp = Math.min(...temps);
+      const maxTemp = Math.max(...temps);
+      const avgTemp =
+        temps.reduce((acc, v) => acc + v, 0) / (temps.length || 1);
+
+      // Simple comfort score: 0–100, best around 21°C or 70°F
+      const ideal = rawForecast.units === "imperial" ? 70 : 21;
+      const diff = Math.abs(avgTemp - ideal);
+      const comfortScore = Math.max(0, 100 - diff * 5);
+
+      const payload = {
+        type: "TomorrowStats",
+        units: rawForecast.units,
+        location: rawForecast.location,
+        min_temp: roundToOne(minTemp),
+        max_temp: roundToOne(maxTemp),
+        avg_temp: roundToOne(avgTemp),
+        comfort_score: Math.round(comfortScore),
+        meta: {
+          from: "RawForecast"
+        }
+      };
+
+      updateJsonView("weather-stats-json", payload);
+      return payload;
+    }
+
+    // Node 5: Comparison (vs previous run in localStorage)
+    function compareWithPrevious(stats) {
+      const key = "weather:last:" + stats.location.city + ":" + stats.units;
+      const prevRaw = localStorage.getItem(key);
+      let prev = null;
+      if (prevRaw) {
+        try {
+          prev = JSON.parse(prevRaw);
+        } catch {
+          prev = null;
+        }
+      }
+
+      const deltaComfort =
+        prev && typeof prev.comfort_score === "number"
+          ? stats.comfort_score - prev.comfort_score
+          : null;
+
+      const payload = {
+        type: "WeatherComparison",
+        current: stats,
+        previous: prev,
+        deltas: {
+          comfort_score: deltaComfort
+        }
+      };
+
+      // Persist current stats for next time
+      localStorage.setItem(key, JSON.stringify(stats));
+
+      updateJsonView("weather-comparison-json", payload);
+      return payload;
+    }
+
+    // Node 6: Renderer
+    function renderWeather(comparison) {
+      const summaryEl = document.getElementById("weather-summary");
+
+      const current = comparison.current;
+      const prevComfort = comparison.previous
+        ? comparison.previous.comfort_score
+        : null;
+      const deltaComfort = comparison.deltas.comfort_score;
+
+      const unitsLabel = current.units === "imperial" ? "°F" : "°C";
+
+      let comfortLine = "";
+      if (prevComfort == null || deltaComfort == null) {
+        comfortLine = `Comfort score is ${current.comfort_score} (0–100, higher is more comfortable).`;
+      } else if (deltaComfort > 0) {
+        comfortLine = `Comfort score improved from ${prevComfort} → ${current.comfort_score} (Δ +${deltaComfort}).`;
+      } else if (deltaComfort < 0) {
+        comfortLine = `Comfort score fell from ${prevComfort} → ${current.comfort_score} (Δ ${deltaComfort}).`;
+      } else {
+        comfortLine = `Comfort score stayed the same at ${current.comfort_score}.`;
+      }
+
+      summaryEl.innerHTML =
+        `<strong>${current.location.city}</strong> tomorrow: ` +
+        `<strong>${current.min_temp}${unitsLabel}</strong> low, ` +
+        `<strong>${current.max_temp}${unitsLabel}</strong> high, ` +
+        `average around <strong>${current.avg_temp}${unitsLabel}</strong>.<br/>` +
+        comfortLine;
+
+      const payload = {
+        type: "WeatherRenderModel",
+        display_city: current.location.city,
+        units: unitsLabel,
+        min_temp_label: `${current.min_temp}${unitsLabel}`,
+        max_temp_label: `${current.max_temp}${unitsLabel}`,
+        avg_temp_label: `${current.avg_temp}${unitsLabel}`,
+        comfort_score: current.comfort_score,
+        previous_comfort_score: prevComfort,
+        delta_comfort: deltaComfort
+      };
+
+      updateJsonView("weather-render-json", payload);
+      return payload;
+    }
+
+    function runWeatherPipeline() {
+      const statusEl = document.getElementById("weather-status");
+      if (statusEl) {
+        statusEl.textContent = "Running weather pipeline…";
+        statusEl.classList.remove("ok", "error");
+      }
+
+      try {
+        const locationSpec = buildLocationSpec();
+        const request = buildWeatherRequest(locationSpec);
+        const forecast = buildMockForecast(request);
+        const stats = extractTomorrowStats(forecast);
+        const comparison = compareWithPrevious(stats);
+        renderWeather(comparison);
+
+        if (statusEl) {
+          statusEl.textContent = "Weather pipeline complete.";
+          statusEl.classList.add("ok");
+        }
+      } catch (err) {
+        console.error(err);
+        if (statusEl) {
+          statusEl.textContent = "Error: " + err.message;
+          statusEl.classList.add("error");
+        }
+      }
+    }
+
+    // ------------- WEB ANALYZER PIPELINE -------------
+
+    // Node 1: RawTextInput
+    function buildRawTextInput() {
+      const textarea = document.getElementById("web-input-text");
+      const text = (textarea?.value || "").trim();
+
+      const payload = {
+        type: "RawTextInput",
+        text,
+        meta: { source: "user", created_at: Date.now() }
+      };
+
+      updateJsonView("web-input-json", payload);
+      return payload;
+    }
+
+    // Node 2: PromptDraft (clean + detect url)
+    function buildPromptDraft(rawInput) {
+      const text = rawInput.text || "";
+      const cleanText = text.replace(/\s+/g, " ").trim();
+      const urlMatch = cleanText.match(/https?:\/\/[^\\s]+/i);
+      const detectedUrl = urlMatch ? urlMatch[0] : null;
+
+      const payload = {
+        type: "PromptDraft",
+        original_text: text,
+        clean_text: cleanText,
+        detected_url: detectedUrl,
+        meta: { auto_cleaned: true }
+      };
+
+      updateJsonView("web-prompt-json", payload);
+
+      if (!detectedUrl) {
+        throw new Error("No URL detected in the request. Please include a URL.");
+      }
+
+      return payload;
+    }
+
+    // Node 3: FetchedPage
+    async function fetchWebPage(promptDraft) {
+      const url = promptDraft.detected_url;
+
+      async function tryFetch(targetUrl) {
+        const res = await fetch(targetUrl);
+        if (!res.ok) {
+          throw new Error("Fetch error: " + res.status + " " + res.statusText);
+        }
+        const contentType = res.headers.get("content-type") || "";
+        const text = await res.text();
+        return { text, contentType };
+      }
+
+      let fetched;
+      let usedProxy = false;
+
+      try {
+        fetched = await tryFetch(url);
+      } catch (e) {
+        const proxyUrl =
+          "https://api.allorigins.win/raw?url=" + encodeURIComponent(url);
+        fetched = await tryFetch(proxyUrl);
+        usedProxy = true;
+      }
+
+      const payload = {
+        type: "FetchedPage",
+        url,
+        status: 200,
+        content_type: fetched.contentType,
+        text_content: fetched.text,
+        meta: {
+          used_proxy: usedProxy,
+          fetched_at: Date.now()
+        }
+      };
+
+      updateJsonView("web-fetch-json", payload);
+      return payload;
+    }
+
+    // Node 4: ExtractedLinks
+    function extractLinks(fetchedPage) {
+      const html = fetchedPage.text_content || "";
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
+
+      const anchors = Array.from(doc.querySelectorAll("a"));
+      const baseUrl = fetchedPage.url;
+
+      function toAbsolute(href) {
+        try {
+          return new URL(href, baseUrl).href;
+        } catch {
+          return href;
+        }
+      }
+
+      const links = anchors
+        .map((a) => {
+          const text = (a.textContent || "").trim();
+          const href = a.getAttribute("href") || "";
+          if (!href || !text) return null;
+          return {
+            title: text,
+            url: toAbsolute(href),
+            text_length: text.length
+          };
+        })
+        .filter(Boolean);
+
+      const payload = {
+        type: "ExtractedLinks",
+        page_title: doc.title || "",
+        base_url: baseUrl,
+        total_links: links.length,
+        links,
+        meta: { extracted_at: Date.now() }
+      };
+
+      updateJsonView("web-links-json", payload);
+      return payload;
+    }
+
+    // Node 5: TopLinks
+    function selectTopLinks(extractedLinks, topN = 5) {
+      const links = extractedLinks.links || [];
+      const sorted = [...links].sort((a, b) => b.text_length - a.text_length);
+      const top = sorted.slice(0, topN).map((l) => ({
+        title: l.title,
+        url: l.url
+      }));
+
+      const payload = {
+        type: "TopLinks",
+        base_url: extractedLinks.base_url,
+        page_title: extractedLinks.page_title,
+        links: top,
+        meta: { selected_at: Date.now() }
+      };
+
+      updateJsonView("web-top-json", payload);
+
+      const listEl = document.getElementById("web-top-list");
+      if (listEl) {
+        if (!top.length) {
+          listEl.innerHTML = "<em>No links selected.</em>";
+        } else {
+          const items = top
+            .map(
+              (l) =>
+                `<li><a href="${l.url}" target="_blank" rel="noopener noreferrer">${escapeHtml(
+                  l.title
+                )}</a></li>`
+            )
+            .join("");
+          listEl.innerHTML = `<ol>${items}</ol>`;
+        }
+      }
+
+      return payload;
+    }
+
+    // Node 6: SummaryOutput
+    async function summarizeLinks(topLinks) {
+      const tokenInput = document.getElementById("hf-token");
+      const apiToken = (tokenInput?.value || "").trim();
+      const links = topLinks.links || [];
+
+      const summaryPrompt =
+        "Summarize these links in a short, friendly paragraph for a non-technical user:" +
+        "\n\n" +
+        links
+          .map((l, i) => `${i + 1}. ${l.title} (${l.url})`)
+          .join("\n");
+
+      let payload;
+
+      if (!links.length) {
+        payload = {
+          type: "SummaryOutput",
+          summary: "No links were extracted from the page.",
+          used_provider: "mock",
+          meta: { created_at: Date.now() }
+        };
+      } else if (!apiToken) {
+        const titles = links.map((l) => l.title).join("; ");
+        payload = {
+          type: "SummaryOutput",
+          summary:
+            "Top links on the page: " +
+            titles +
+            ". (Mock summary – no external LLM call was made.)",
+          used_provider: "mock",
+          meta: { created_at: Date.now() }
+        };
+      } else {
+        const res = await fetch(
+          "https://api-inference.huggingface.co/models/facebook/bart-large-cnn",
+          {
+            method: "POST",
+            headers: {
+              Authorization: "Bearer " + apiToken,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              inputs: summaryPrompt,
+              parameters: { max_length: 128 }
+            })
+          }
+        );
+
+        if (!res.ok) {
+          throw new Error(
+            "Hugging Face API error: " + res.status + " " + res.statusText
+          );
+        }
+
+        const data = await res.json();
+        const text =
+          Array.isArray(data) &&
+          data[0] &&
+          typeof data[0].summary_text === "string"
+            ? data[0].summary_text
+            : JSON.stringify(data);
+
+        payload = {
+          type: "SummaryOutput",
+          summary: text,
+          used_provider: "huggingface",
+          raw_response: data,
+          meta: { created_at: Date.now() }
+        };
+      }
+
+      updateJsonView("web-summary-json", payload);
+
+      const summaryEl = document.getElementById("web-summary");
+      if (summaryEl) {
+        summaryEl.textContent = payload.summary;
+      }
+
+      return payload;
+    }
+
+    async function runWebPipeline() {
+      const statusEl = document.getElementById("web-status");
+      if (statusEl) {
+        statusEl.textContent = "Running web pipeline…";
+        statusEl.classList.remove("ok", "error");
+      }
+
+      try {
+        const raw = buildRawTextInput();
+        const draft = buildPromptDraft(raw);
+        const page = await fetchWebPage(draft);
+        const links = extractLinks(page);
+        const top = selectTopLinks(links, 5);
+        await summarizeLinks(top);
+
+        if (statusEl) {
+          statusEl.textContent = "Web pipeline complete.";
+          statusEl.classList.add("ok");
+        }
+      } catch (err) {
+        console.error(err);
+        if (statusEl) {
+          statusEl.textContent = "Error: " + err.message;
+          statusEl.classList.add("error");
+        }
+      }
+    }
+
+    // ------------- Utilities -------------
+
+    function hashString(str) {
+      let h = 0;
+      for (let i = 0; i < str.length; i++) {
+        h = (h << 5) - h + str.charCodeAt(i);
+        h |= 0;
+      }
+      return h;
+    }
+
+    function roundToOne(v) {
+      return Math.round(v * 10) / 10;
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // ------------- Event wiring -------------
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const weatherBtn = document.getElementById("run-weather");
+      const webBtn = document.getElementById("run-web");
+
+      if (weatherBtn) {
+        weatherBtn.addEventListener("click", runWeatherPipeline);
+      }
+      if (webBtn) {
+        webBtn.addEventListener("click", runWebPipeline);
+      }
+    });
+  </script>
+</body>
+</html>
